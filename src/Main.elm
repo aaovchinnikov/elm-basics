@@ -48,23 +48,17 @@ type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
   | AddElement
+  | SelectElement
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model = 
   case msg of
     AddElement ->
-      ( { model | array = 
-          Array.push 
-            ( Record 
-                "new element"
-                ( Array.length model.array + 1 ) 
-                "New Element"
-            ) 
-          model.array 
-        }
-      , Cmd.none
-      )
-    
+      addElement model
+
+    SelectElement ->
+      addElement model
+
     LinkClicked _ ->
       ( model
       , Cmd.none
@@ -74,6 +68,21 @@ update msg model =
       ( model
       , Cmd.none
       )
+
+-- helper for update function
+addElement : Model -> ( Model, Cmd Msg )
+addElement model = 
+  ( { model | array = 
+      Array.push 
+        ( Record 
+          "new element"
+          ( Array.length model.array + 1 ) 
+          "New Element"
+        ) 
+        model.array 
+    }
+  , Cmd.none
+  )
 
 
 -- SUBSCRIPTIONS
@@ -90,9 +99,9 @@ view model =
     ]
   }
 
-viewListItems : Array.Array Record -> List (Html msg)
+viewListItems : Array.Array Record -> List (Html Msg)
 viewListItems array =
   Array.toList
-    ( Array.map ( \record -> li [] [text record.name] ) 
+    ( Array.map ( \record -> li [ onClick SelectElement ] [text record.name] ) 
       array 
     )
