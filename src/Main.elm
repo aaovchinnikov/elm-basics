@@ -47,17 +47,23 @@ init flags url key =
 type Msg 
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
-  | AddElement
+  | AddNewElement
   | SelectElement
+  | RemoveSelectedElement
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model = 
   case msg of
-    AddElement ->
+    AddNewElement ->
       addElement model
 
     SelectElement ->
       addElement model
+
+    RemoveSelectedElement ->
+      ( model
+      , Cmd.none
+      )
 
     LinkClicked _ ->
       ( model
@@ -94,15 +100,18 @@ view : Model -> Browser.Document Msg
 view model = 
   { title = "Basic List application"
   , body = 
-    [ button 
-      [ style "display" "block"
-      , onClick AddElement 
-      ] 
-      [ text "Add Element" ] 
-    , ul [ style "float" "left"] ( viewListItems model.array )
-    , viewSelectedItem ( getSelectedRecord model.array )
+    [ viewListPanel model
+    , viewSelectedItemPanel ( Record "record" 20 "details of record" )
     ]
   }
+
+viewListPanel : Model -> Html Msg
+viewListPanel model = 
+  div []
+    [ button [ onClick AddNewElement ] [ text "Add" ]
+    , button [ onClick RemoveSelectedElement ] [ text "Remove" ]
+    , ul [] ( viewListItems model.array )
+    ]
 
 viewListItems : Array.Array Record -> List (Html Msg)
 viewListItems array =
@@ -111,23 +120,25 @@ viewListItems array =
       array 
     )
 
-getSelectedRecord : Array.Array Record -> Record
-getSelectedRecord array = 
-  case (Array.get 0 array) of
-    Nothing ->
-      Record "Invalid" -1 "Array.get failed"
-
-    Just record -> record
-
-
-viewSelectedItem : Record -> Html Msg
-viewSelectedItem record = 
-  div [ style "display" "inline" ] 
-  [ h4 [] [ text "Selected Item Info" ]
-  , span [ style "display" "list-item" ] 
-      [ text ( "name: " ++ record.name ) ]
-  , span [ style "display" "list-item" ] 
-      [ text ( "intField: " ++ ( String.fromInt record.intField ) ) ]
-  , span [ style "display" "list-item" ] 
-      [text ( "stringField: " ++ record.stringField ) ]
-  ]
+viewSelectedItemPanel : Record -> Html Msg
+viewSelectedItemPanel record = 
+  div []
+    [ table []
+        [ caption [] [ text "Selected item details" ]
+        , tbody [] 
+            [ tr [] 
+                [ td [] [ text "name:" ]
+                , td [] [ text record.name ]
+                ]
+            , tr []
+                [ td [] [ text "intField:" ]
+                , td [] [ text ( String.fromInt record.intField ) ]
+                ]
+            , tr [] 
+                [ td [] [ text "stringField:" ]
+                , td [] [ text record.stringField ]
+                ]
+            ]    
+        ]
+    , button [] [ text "Edit" ]
+    ]
