@@ -94,8 +94,13 @@ view : Model -> Browser.Document Msg
 view model = 
   { title = "Basic List application"
   , body = 
-    [ ul [] ( viewListItems model.array )
-    , button [ onClick AddElement ] [ text "Add Element" ] 
+    [ button 
+      [ style "display" "block"
+      , onClick AddElement 
+      ] 
+      [ text "Add Element" ] 
+    , ul [ style "float" "left"] ( viewListItems model.array )
+    , viewSelectedItem ( getSelectedRecord model.array )
     ]
   }
 
@@ -105,3 +110,24 @@ viewListItems array =
     ( Array.map ( \record -> li [ onClick SelectElement ] [text record.name] ) 
       array 
     )
+
+getSelectedRecord : Array.Array Record -> Record
+getSelectedRecord array = 
+  case (Array.get 0 array) of
+    Nothing ->
+      Record "Invalid" -1 "Array.get failed"
+
+    Just record -> record
+
+
+viewSelectedItem : Record -> Html Msg
+viewSelectedItem record = 
+  div [ style "display" "inline" ] 
+  [ h4 [] [ text "Selected Item Info" ]
+  , span [ style "display" "list-item" ] 
+      [ text ( "name: " ++ record.name ) ]
+  , span [ style "display" "list-item" ] 
+      [ text ( "intField: " ++ ( String.fromInt record.intField ) ) ]
+  , span [ style "display" "list-item" ] 
+      [text ( "stringField: " ++ record.stringField ) ]
+  ]
