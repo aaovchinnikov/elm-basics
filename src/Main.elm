@@ -5,6 +5,7 @@ import Url
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
 
 
 -- MAIN
@@ -32,9 +33,26 @@ init flags url key =
 type Msg 
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
+  | AddElement
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model = ( model, Cmd.none )
+update msg model = 
+  case msg of
+    AddElement ->
+      ( { model | list = List.append model.list ["new element"]}
+      , Cmd.none
+      )
+    
+    LinkClicked _ ->
+      ( model
+      , Cmd.none
+      )
+
+    UrlChanged _ ->
+      ( model
+      , Cmd.none
+      )
+
 
 -- SUBSCRIPTIONS
 subscriptions : Model -> Sub Msg
@@ -46,6 +64,7 @@ view model =
   { title = "Basic List application"
   , body = 
     [ ul [] (viewListItems model.list)
+    , button [ onClick AddElement ] [ text "Add Element" ] 
     ]
   }
 
