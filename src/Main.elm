@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Array
 import Browser
 import Url
 import Browser.Navigation as Nav
@@ -20,14 +21,25 @@ main = Browser.application
   }
 
 -- MODEL
+type alias Record = 
+  { name : String
+  , intField : Int
+  , stringField : String
+  }
+
 type alias Model = 
   { key : Nav.Key
-  , list : List String
+  , array : Array.Array Record
   }
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model key [ "element 1", "element 2", "element 3" ], Cmd.none )
+  ( Model key 
+      (Array.fromList [ Record "element 1" 1 "String 1"
+      , Record "element 2" 2 "String 2"
+      , Record "element 3" 3 "String 3"
+      ])
+  , Cmd.none )
 
 -- UPDATE
 type Msg 
@@ -39,7 +51,15 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model = 
   case msg of
     AddElement ->
-      ( { model | list = List.append model.list ["new element"]}
+      ( { model | array = 
+          Array.push 
+            ( Record 
+                "new element"
+                ( Array.length model.array + 1 ) 
+                "New Element"
+            ) 
+          model.array 
+        }
       , Cmd.none
       )
     
@@ -63,11 +83,12 @@ view : Model -> Browser.Document Msg
 view model = 
   { title = "Basic List application"
   , body = 
-    [ ul [] (viewListItems model.list)
+    [ ul [] (viewListItems model.array)
     , button [ onClick AddElement ] [ text "Add Element" ] 
     ]
   }
 
-viewListItems : List String -> List (Html msg)
-viewListItems list =
-  List.map (\s -> li [] [text s]) list
+viewListItems : Array.Array Record -> List (Html msg)
+viewListItems array =
+  Array.toList
+    ( Array.map (\record -> li [] [text record.name]) array )
