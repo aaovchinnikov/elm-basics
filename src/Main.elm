@@ -45,6 +45,10 @@ view : Model -> Browser.Document Msg
 view model = 
   { title = "Basic List application"
   , body = 
-    [ text "body text"      
+    [ ul [] (viewListItems model.list)
     ]
   }
+
+viewListItems : List String -> List (Html msg)
+viewListItems list =
+  List.map (\s -> li [] [text s]) list
