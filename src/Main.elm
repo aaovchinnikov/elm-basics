@@ -35,10 +35,12 @@ type alias Model =
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
   ( Model key 
-      (Array.fromList [ Record "element 1" 1 "String 1"
-      , Record "element 2" 2 "String 2"
-      , Record "element 3" 3 "String 3"
-      ])
+      ( Array.fromList 
+        [ Record "element 1" 1 "String 1"
+        , Record "element 2" 2 "String 2"
+        , Record "element 3" 3 "String 3"
+        ]
+      )
   , Cmd.none )
 
 -- UPDATE
@@ -83,7 +85,7 @@ view : Model -> Browser.Document Msg
 view model = 
   { title = "Basic List application"
   , body = 
-    [ ul [] (viewListItems model.array)
+    [ ul [] ( viewListItems model.array )
     , button [ onClick AddElement ] [ text "Add Element" ] 
     ]
   }
@@ -91,4 +93,6 @@ view model =
 viewListItems : Array.Array Record -> List (Html msg)
 viewListItems array =
   Array.toList
-    ( Array.map (\record -> li [] [text record.name]) array )
+    ( Array.map ( \record -> li [] [text record.name] ) 
+      array 
+    )
