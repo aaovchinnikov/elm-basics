@@ -141,8 +141,9 @@ view : Model -> Browser.Document Msg
 view model = 
   { title = "Basic List application"
   , body = 
-    [ viewListPanel model
-    , ( case model.state of 
+    [ viewListPanel model.array model.selectedIndex model.state
+    ,  
+      ( case model.state of 
         Regular -> viewSelectedItemPanelInRegularState 
           (getSelectedRecord model.selectedIndex model.array)
 
@@ -152,21 +153,59 @@ view model =
     ]
   }
 
-viewListPanel : Model -> Html Msg
-viewListPanel model = 
+-- List view with Add and Remove buttons
+viewListPanel : Array.Array Record -> Maybe Int-> State -> Html Msg
+viewListPanel array optionalIndex state = 
   div []
-    [ button [ onClick AddNewElement ] [ text "Add" ]
-    , button [ onClick RemoveSelectedElement ] [ text "Remove" ]
-    , ul [] (viewListItems model.array)
+    [ viewListPanelButton "Add" state AddNewElement 
+    , viewListPanelButton "Remove" state RemoveSelectedElement
+    , viewList array optionalIndex state
     ]
 
-viewListItems : Array.Array Record -> List (Html Msg)
-viewListItems array =
-  List.map 
-    ( \(index,record) -> li [ onClick (SelectElement index) ] 
-      [ text record.name ]
-    ) 
-    (Array.toIndexedList array)
+viewListPanelButton : String -> State -> Msg -> Html Msg
+viewListPanelButton label state msg = 
+  button ( List.concat
+    [ [ onClick msg ]
+    , case state of 
+        Regular -> []
+        Editing -> [ disabled True ]
+    ]
+  ) [ text label ]
+
+viewList : Array.Array Record -> Maybe Int -> State -> Html Msg
+viewList array optionalIndex state =
+  ul [] 
+  ( case optionalIndex of
+      Nothing -> List.map 
+        ( \(index,record) -> li
+          (onClickAttrituteAsList state (SelectElement index))
+          [ text record.name ]         
+        ) 
+        (Array.toIndexedList array)
+
+      Just selectedIndex -> List.map 
+        ( \(index,record) -> li
+          ( List.concat
+            [ onClickAttrituteAsList state (SelectElement index)
+            , if index == selectedIndex then
+                [ style "color" "red" ]
+              else
+                []
+            ]
+          ) [ text record.name ]
+        ) 
+        (Array.toIndexedList array)
+  )
+
+onClickAttrituteAsList : State -> Msg-> List (Attribute Msg)
+onClickAttrituteAsList state msg= 
+  case state of
+    Regular -> [ onClick msg ]
+    Editing -> []
+
+-- Table view of selected item details
+--viewSelectedItemPanel : Array.Array Record -> Maybe Int -> State -> Html Msg
+--viewSelectedItemPanel : 
 
 getSelectedRecord :  Maybe Int -> Array.Array Record -> Record
 getSelectedRecord optionalIndex array = 
