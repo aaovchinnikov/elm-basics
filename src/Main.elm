@@ -27,12 +27,18 @@ type alias Record =
   , stringField : String
   }
 
+type State
+  = Regular
+  | Editing
+
 type alias Model = 
   { key : Nav.Key
   , array : Array.Array Record
+  , selectedIndex : Maybe Int
+  , state : State
   }
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init flags url key =
   ( Model key 
       ( Array.fromList 
@@ -41,6 +47,8 @@ init flags url key =
         , Record "element 3" 3 "String 3"
         ]
       )
+      Nothing
+      Regular
   , Cmd.none )
 
 -- UPDATE
@@ -48,20 +56,41 @@ type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
   | AddNewElement
-  | SelectElement
+  | SelectElement Int
   | RemoveSelectedElement
+  | SwitchToEditing
+  | SwitchToRegular
+  | SaveAndSwitchToRegular
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = 
   case msg of
     AddNewElement ->
       addElement model
 
-    SelectElement ->
-      addElement model
+    SelectElement index ->
+      ( { model | selectedIndex = Just index }
+      , Cmd.none
+      )
 
     RemoveSelectedElement ->
-      ( model
+      ( { model | array = (remove model.selectedIndex model.array) 
+        , selectedIndex = Nothing }
+      , Cmd.none
+      )
+
+    SwitchToEditing ->
+      ( { model | state = Editing }
+      , Cmd.none
+      )
+
+    SwitchToRegular -> 
+      ( { model | state = Regular }
+      , Cmd.none
+      )
+
+    SaveAndSwitchToRegular -> 
+      ( { model | state = Regular }
       , Cmd.none
       )
 
@@ -75,14 +104,26 @@ update msg model =
       , Cmd.none
       )
 
+remove : Maybe Int -> Array.Array a -> Array.Array a
+remove optionalIndex a =
+  case optionalIndex of
+    Nothing -> a
+
+    Just i ->
+      let
+        a1 = Array.slice 0 i a
+        a2 = Array.slice (i+1) (Array.length a) a
+      in
+        Array.append a1 a2
+
 -- helper for update function
-addElement : Model -> ( Model, Cmd Msg )
+addElement : Model -> (Model, Cmd Msg)
 addElement model = 
   ( { model | array = 
       Array.push 
         ( Record 
           "new element"
-          ( Array.length model.array + 1 ) 
+          (Array.length model.array + 1) 
           "New Element"
         ) 
         model.array 
@@ -101,7 +142,13 @@ view model =
   { title = "Basic List application"
   , body = 
     [ viewListPanel model
-    , viewSelectedItemPanel ( Record "record" 20 "details of record" )
+    , ( case model.state of 
+        Regular -> viewSelectedItemPanelInRegularState 
+          (getSelectedRecord model.selectedIndex model.array)
+
+        Editing -> viewSelectedItemPanelInEditingState
+          (getSelectedRecord model.selectedIndex model.array)
+      )
     ]
   }
 
@@ -110,18 +157,31 @@ viewListPanel model =
   div []
     [ button [ onClick AddNewElement ] [ text "Add" ]
     , button [ onClick RemoveSelectedElement ] [ text "Remove" ]
-    , ul [] ( viewListItems model.array )
+    , ul [] (viewListItems model.array)
     ]
 
 viewListItems : Array.Array Record -> List (Html Msg)
 viewListItems array =
-  Array.toList
-    ( Array.map ( \record -> li [ onClick SelectElement ] [text record.name] ) 
-      array 
-    )
+  List.map 
+    ( \(index,record) -> li [ onClick (SelectElement index) ] 
+      [ text record.name ]
+    ) 
+    (Array.toIndexedList array)
 
-viewSelectedItemPanel : Record -> Html Msg
-viewSelectedItemPanel record = 
+getSelectedRecord :  Maybe Int -> Array.Array Record -> Record
+getSelectedRecord optionalIndex array = 
+  case optionalIndex of 
+    Nothing -> Record "n/a" 0 "n/a"
+
+    Just index -> 
+      case (Array.get index array) of
+        Nothing -> Record "n/a" 0 "n/a"
+
+        Just record -> record
+      
+
+viewSelectedItemPanelInRegularState : Record -> Html Msg
+viewSelectedItemPanelInRegularState record = 
   div []
     [ table []
         [ caption [] [ text "Selected item details" ]
@@ -140,5 +200,32 @@ viewSelectedItemPanel record =
                 ]
             ]    
         ]
-    , button [] [ text "Edit" ]
+    , button [ onClick SwitchToEditing ] [ text "Edit" ]
     ]
+
+viewSelectedItemPanelInEditingState : Record -> Html Msg
+viewSelectedItemPanelInEditingState record = 
+  Html.form []
+    [ table []
+        [ caption [] [ text "Editing item details" ]
+        , tbody [] 
+            [ tr [] 
+                [ td [] [ text "name:" ]
+                , td [] [ input [] [] ]
+                ]
+            , tr []
+                [ td [] [ text "intField:" ]
+                , td [] [ input [] [] ]
+                ]
+            , tr [] 
+                [ td [] [ text "stringField:" ]
+                , td [] [ input [] [] ]
+                ]
+            ]    
+        ]
+    , button [ onClick SaveAndSwitchToRegular ] [ text "Save" ]
+    , button 
+        [ onClick SwitchToRegular
+        , type_ "reset"
+        ] [ text "Cancel" ]
+    ] 
