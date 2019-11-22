@@ -173,29 +173,52 @@ viewListPanelButton label state msg =
   ) [ text label ]
 
 viewList : Array.Array Record -> Maybe Int -> State -> Html Msg
-viewList array optionalIndex state =
-  ul [] 
-  ( case optionalIndex of
-      Nothing -> List.map 
-        ( \(index,record) -> li
-          (onClickAttrituteAsList state (SelectElement index))
-          [ text record.name ]         
-        ) 
-        (Array.toIndexedList array)
-
-      Just selectedIndex -> List.map 
-        ( \(index,record) -> li
-          ( List.concat
-            [ onClickAttrituteAsList state (SelectElement index)
-            , if index == selectedIndex then
-                [ style "color" "red" ]
-              else
-                []
-            ]
-          ) [ text record.name ]
-        ) 
-        (Array.toIndexedList array)
+viewList array optionalIndex state = 
+  ul []
+  ( List.map 
+    (\(index,record) -> 
+      buildListItem 
+      ( prepareItemWithCheckOfSelection 
+          (addOnClickIfRegular (index,record) state) 
+          optionalIndex
+      )
+    )
+    (Array.toIndexedList array)
   )
+
+addOnClickIfRegular : (Int, Record) -> State -> (Int, String, List (Attribute Msg))
+addOnClickIfRegular (index, record) state =
+  ( index
+  , record.name
+  , case state of
+      Regular -> [ onClick (SelectElement index) ]
+      Editing -> [] 
+  )
+
+--Resolve Maybe operator
+prepareItemWithCheckOfSelection : (Int, String, List (Attribute Msg)) -> Maybe Int -> (String, List (Attribute Msg))
+prepareItemWithCheckOfSelection (index, label, list) optionalIndex = 
+  case optionalIndex of
+    Nothing -> (label, list)
+    Just selectedIndex -> 
+      addStyleIfItemSelected (index, label, list) selectedIndex
+
+addStyleIfItemSelected : (Int, String, List (Attribute Msg)) -> Int -> (String, List (Attribute Msg))
+addStyleIfItemSelected (index, label, list) selectedIndex =
+  ( label
+  , List.concat
+        [ list
+        , if index == selectedIndex then
+            [ style "color" "red" ]
+          else
+            []
+        ]
+  )
+
+buildListItem : (String, List (Attribute Msg)) -> Html Msg
+buildListItem (name, list) = 
+  li list [ text name ]
+
 
 onClickAttrituteAsList : State -> Msg-> List (Attribute Msg)
 onClickAttrituteAsList state msg= 
