@@ -142,14 +142,7 @@ view model =
   { title = "Basic List application"
   , body = 
     [ viewListPanel model.array model.selectedIndex model.state
-    ,  
-      ( case model.state of 
-        Regular -> viewSelectedItemPanelInRegularState 
-          (getSelectedRecord model.selectedIndex model.array)
-
-        Editing -> viewSelectedItemPanelInEditingState
-          (getSelectedRecord model.selectedIndex model.array)
-      )
+    , viewSelectedItemPanel model.array model.selectedIndex model.state
     ]
   }
 
@@ -219,7 +212,6 @@ buildListItem : (String, List (Attribute Msg)) -> Html Msg
 buildListItem (name, list) = 
   li list [ text name ]
 
-
 onClickAttrituteAsList : State -> Msg-> List (Attribute Msg)
 onClickAttrituteAsList state msg= 
   case state of
@@ -227,20 +219,17 @@ onClickAttrituteAsList state msg=
     Editing -> []
 
 -- Table view of selected item details
---viewSelectedItemPanel : Array.Array Record -> Maybe Int -> State -> Html Msg
---viewSelectedItemPanel : 
-
-getSelectedRecord :  Maybe Int -> Array.Array Record -> Record
-getSelectedRecord optionalIndex array = 
-  case optionalIndex of 
-    Nothing -> Record "n/a" 0 "n/a"
-
-    Just index -> 
-      case (Array.get index array) of
-        Nothing -> Record "n/a" 0 "n/a"
-
-        Just record -> record
-      
+viewSelectedItemPanel : Array.Array Record -> Maybe Int -> State -> Html Msg
+viewSelectedItemPanel array optionalIndex state = 
+  case optionalIndex of
+    Nothing ->  div [] [ text "Nothing selected"]
+    Just selectedIndex ->
+      case (Array.get selectedIndex array) of
+        Nothing ->  div [] [ text "Array.get call failed. Check provided index for array bounds" ]
+        Just record ->
+          case state of
+            Regular -> viewSelectedItemPanelInRegularState record
+            Editing -> viewSelectedItemPanelInEditingState record
 
 viewSelectedItemPanelInRegularState : Record -> Html Msg
 viewSelectedItemPanelInRegularState record = 
@@ -267,21 +256,27 @@ viewSelectedItemPanelInRegularState record =
 
 viewSelectedItemPanelInEditingState : Record -> Html Msg
 viewSelectedItemPanelInEditingState record = 
-  Html.form []
+  div []
     [ table []
         [ caption [] [ text "Editing item details" ]
         , tbody [] 
             [ tr [] 
                 [ td [] [ text "name:" ]
-                , td [] [ input [] [] ]
+                , td [] 
+                    [ input [ value record.name ] [] 
+                    ]
                 ]
             , tr []
                 [ td [] [ text "intField:" ]
-                , td [] [ input [] [] ]
+                , td [] 
+                    [ input [ value (String.fromInt record.intField) ] [] 
+                    ]
                 ]
             , tr [] 
                 [ td [] [ text "stringField:" ]
-                , td [] [ input [] [] ]
+                , td [] 
+                    [ input [ value record.stringField ] [] 
+                    ]
                 ]
             ]    
         ]
