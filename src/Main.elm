@@ -6,7 +6,7 @@ import Url
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 
 
 -- MAIN
@@ -36,6 +36,7 @@ type alias Model =
   , array : Array.Array Record
   , selectedIndex : Maybe Int
   , state : State
+  , editingRecord : Record
   }
 
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
@@ -49,6 +50,7 @@ init flags url key =
       )
       Nothing
       Regular
+      (Record "" 0 "")
   , Cmd.none )
 
 -- UPDATE
@@ -61,6 +63,9 @@ type Msg
   | SwitchToEditing
   | SwitchToRegular
   | SaveAndSwitchToRegular
+  | EditName String
+  | EditIntField String
+  | EditStringField String
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = 
@@ -69,7 +74,12 @@ update msg model =
       addElement model
 
     SelectElement index ->
-      ( { model | selectedIndex = Just index }
+      ( { model | selectedIndex = Just index
+        , editingRecord = 
+            case (Array.get index model.array) of
+              Nothing -> model.editingRecord
+              Just record -> record 
+        }
       , Cmd.none
       )
 
@@ -85,12 +95,26 @@ update msg model =
       )
 
     SwitchToRegular -> 
-      ( { model | state = Regular }
+      ( { model | state = Regular
+        , editingRecord =
+            case model.selectedIndex of
+              Nothing -> model.editingRecord
+              Just index -> 
+                case Array.get index model.array of
+                  Nothing -> model.editingRecord
+                  Just record -> record
+        }
       , Cmd.none
       )
 
+    -- Maybe pass edited index here?
     SaveAndSwitchToRegular -> 
-      ( { model | state = Regular }
+      ( { model | state = Regular
+        , array = 
+            case model.selectedIndex of
+              Nothing -> model.array
+              Just index -> Array.set index model.editingRecord model.array
+        }
       , Cmd.none
       )
 
@@ -103,6 +127,43 @@ update msg model =
       ( model
       , Cmd.none
       )
+
+    EditName newName ->
+      ( { model | editingRecord = Record 
+            newName
+            model.editingRecord.intField
+            model.editingRecord.stringField
+        } 
+      , Cmd.none
+      )
+
+    -- Maybe use plain fields in model? With Optional declaration?
+    -- NEED FIX - with empty intField String.toInt maps to Nothing
+    -- This prevents to remove last number from field
+    EditIntField newIntField ->
+      case String.toInt newIntField of
+        Just int ->
+          ( { model | editingRecord = Record 
+                model.editingRecord.name
+                int
+                model.editingRecord.stringField
+            } 
+          , Cmd.none
+          )
+        Nothing ->
+          ( model
+          , Cmd.none
+          )
+
+    EditStringField newStringField ->
+      ( { model | editingRecord = Record 
+            model.editingRecord.name
+            model.editingRecord.intField
+            newStringField
+        } 
+      , Cmd.none
+      )
+
 
 remove : Maybe Int -> Array.Array a -> Array.Array a
 remove optionalIndex a =
@@ -142,7 +203,7 @@ view model =
   { title = "Basic List application"
   , body = 
     [ viewListPanel model.array model.selectedIndex model.state
-    , viewSelectedItemPanel model.array model.selectedIndex model.state
+    , viewSelectedItemPanel model
     ]
   }
 
@@ -218,18 +279,16 @@ onClickAttrituteAsList state msg=
     Regular -> [ onClick msg ]
     Editing -> []
 
+
 -- Table view of selected item details
-viewSelectedItemPanel : Array.Array Record -> Maybe Int -> State -> Html Msg
-viewSelectedItemPanel array optionalIndex state = 
-  case optionalIndex of
+viewSelectedItemPanel : Model -> Html Msg
+viewSelectedItemPanel model = 
+  case model.selectedIndex of
     Nothing ->  div [] [ text "Nothing selected"]
-    Just selectedIndex ->
-      case (Array.get selectedIndex array) of
-        Nothing ->  div [] [ text "Array.get call failed. Check provided index for array bounds" ]
-        Just record ->
-          case state of
-            Regular -> viewSelectedItemPanelInRegularState record
-            Editing -> viewSelectedItemPanelInEditingState record
+    Just _ ->
+      case model.state of
+        Regular -> viewSelectedItemPanelInRegularState model.editingRecord
+        Editing -> viewSelectedItemPanelInEditingState model.editingRecord
 
 viewSelectedItemPanelInRegularState : Record -> Html Msg
 viewSelectedItemPanelInRegularState record = 
@@ -263,19 +322,28 @@ viewSelectedItemPanelInEditingState record =
             [ tr [] 
                 [ td [] [ text "name:" ]
                 , td [] 
-                    [ input [ value record.name ] [] 
+                    [ input
+                      [ onInput EditName
+                      , value record.name 
+                      ] [] 
                     ]
                 ]
             , tr []
                 [ td [] [ text "intField:" ]
                 , td [] 
-                    [ input [ value (String.fromInt record.intField) ] [] 
+                    [ input 
+                      [ onInput EditIntField
+                      , value (String.fromInt record.intField) 
+                      ] [] 
                     ]
                 ]
             , tr [] 
                 [ td [] [ text "stringField:" ]
                 , td [] 
-                    [ input [ value record.stringField ] [] 
+                    [ input 
+                      [ onInput EditStringField
+                      , value record.stringField
+                      ] [] 
                     ]
                 ]
             ]    
