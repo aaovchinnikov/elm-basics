@@ -210,7 +210,11 @@ view model =
 -- List view with Add and Remove buttons
 viewListPanel : Array.Array Record -> Maybe Int-> State -> Html Msg
 viewListPanel array optionalIndex state = 
-  div []
+  div 
+    [ style "display" "inline-block"
+    , style "border" "3px solid green"
+    , style "vertical-align" "top"
+    ]
     [ viewListPanelButton "Add" state AddNewElement 
     , viewListPanelButton "Remove" state RemoveSelectedElement
     , viewList array optionalIndex state
@@ -284,7 +288,16 @@ onClickAttrituteAsList state msg=
 viewSelectedItemPanel : Model -> Html Msg
 viewSelectedItemPanel model = 
   case model.selectedIndex of
-    Nothing ->  div [] [ text "Nothing selected"]
+    Nothing ->  
+      div
+        [ style "display" "inline-block"
+        , style "border" "3px solid green"
+        , style "margin-left" "2px"
+        ]
+        [ text "Selected item details"
+        , br [][]
+        , text "Nothing selected"
+        ]
     Just _ ->
       case model.state of
         Regular -> viewSelectedItemPanelInRegularState model.editingRecord
@@ -292,7 +305,11 @@ viewSelectedItemPanel model =
 
 viewSelectedItemPanelInRegularState : Record -> Html Msg
 viewSelectedItemPanelInRegularState record = 
-  div []
+  div 
+    [ style "display" "inline-block"
+    , style "border" "3px solid green"
+    , style "margin-left" "2px"
+    ]
     [ table []
         [ caption [] [ text "Selected item details" ]
         , tbody [] 
@@ -315,7 +332,11 @@ viewSelectedItemPanelInRegularState record =
 
 viewSelectedItemPanelInEditingState : Record -> Html Msg
 viewSelectedItemPanelInEditingState record = 
-  div []
+  div 
+    [ style "display" "inline-block"
+    , style "border" "3px solid green"
+    , style "margin-left" "2px"
+    ]
     [ table []
         [ caption [] [ text "Editing item details" ]
         , tbody [] 
